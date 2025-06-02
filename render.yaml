@@ -5,7 +5,7 @@ services:
     plan: free
     buildCommand: pip install -r requirements.txt
     workingDir: GroceryStoreBackend
-    startCommand: uvicorn main:app --host 0.0.0.0 --port 10000
+    startCommand: uvicorn GroceryStoreBackend.main:app --host 0.0.0.0 --port 10000
 
     envVars:
       - key: JWT_SECRET
