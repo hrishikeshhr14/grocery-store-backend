@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from auth.routes import router as auth_router
+from GroceryStoreBackend.auth.routes import router as auth_router
 
 app = FastAPI()
 
