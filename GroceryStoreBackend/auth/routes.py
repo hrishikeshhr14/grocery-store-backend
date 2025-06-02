@@ -1,6 +1,6 @@
 from dotenv import load_dotenv
 from fastapi import APIRouter, HTTPException, Depends, Request
-from auth.dependencies import get_current_user
+from GroceryStoreBackend.auth.dependencies import get_current_user
 from pydantic import BaseModel
 from passlib.context import CryptContext
 from jose import jwt, JWTError
