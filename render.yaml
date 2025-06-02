@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: grocery-store-backend
+    env: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port 10000
+    workingDir: GroceryStoreBackend
+    envVars:
+      - key: JWT_SECRET
+        value: 7fac26f48c88a5e72cf7d57d46bf77160e28018ce13fe070fd09db4f1b5eb002
+      - key: DATABASE_URL
+        value: postgresql://postgres:Messi10psg@db.chbmabtzihitqrmifpnz.supabase.co:5432/postgres
