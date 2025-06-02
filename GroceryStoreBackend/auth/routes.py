@@ -4,7 +4,7 @@ from GroceryStoreBackend.auth.dependencies import get_current_user
 from pydantic import BaseModel
 from passlib.context import CryptContext
 from jose import jwt, JWTError
-from database.db import get_connection
+from GroceryStoreBackend.database.db import get_connection
 load_dotenv() 
 import os
 import datetime
