@@ -100,9 +100,13 @@ class OrderItem(BaseModel):
     item_name: str
     quantity: int
     price: int
+    discount: float = 0.0
+    tax: float = 0.0
 
 class OrderCreate(BaseModel):
     customer_name: str
+    payment_method: str = "Cash"
+    discount: float = 0.0
     items: List[OrderItem]
 
 @router.post("/orders")
@@ -111,18 +115,18 @@ def create_order(order: OrderCreate, user=Depends(get_current_user)):
     cur = conn.cursor()
 
     try:
-        # Insert into orders with user_id
+        # Insert into orders with user_id, payment_method, discount
         cur.execute(
-            "INSERT INTO orders (customer_name, user_id) VALUES (%s, %s) RETURNING id",
-            (order.customer_name, user["user_id"])
+            "INSERT INTO orders (customer_name, user_id, payment_method, discount) VALUES (%s, %s, %s, %s) RETURNING id",
+            (order.customer_name, user["user_id"], order.payment_method, order.discount)
         )
         order_id = cur.fetchone()[0]
 
-        # Insert order items
+        # Insert order items with discount and tax
         for item in order.items:
             cur.execute(
-                "INSERT INTO order_items (order_id, item_name, quantity, price) VALUES (%s, %s, %s, %s)",
-                (order_id, item.item_name, item.quantity, item.price)
+                "INSERT INTO order_items (order_id, item_name, quantity, price, discount, tax) VALUES (%s, %s, %s, %s, %s, %s)",
+                (order_id, item.item_name, item.quantity, item.price, item.discount, item.tax)
             )
 
         conn.commit()
@@ -141,26 +145,34 @@ def list_orders(user=Depends(get_current_user)):
     conn = get_connection()
     cur = conn.cursor()
     try:
-        cur.execute("SELECT id, customer_name, created_at FROM orders WHERE user_id = %s", (user["user_id"],))
+        cur.execute("SELECT id, customer_name, created_at, payment_method, discount FROM orders WHERE user_id = %s", (user["user_id"],))
         orders = cur.fetchall()
         print("Orders fetched:", orders)  # Debug
 
         order_list = []
         for order in orders:
             cur.execute(
-                "SELECT item_name, quantity, price FROM order_items WHERE order_id = %s",
+                "SELECT item_name, quantity, price, discount, tax FROM order_items WHERE order_id = %s",
                 (order[0],)
             )
             items = cur.fetchall()
             print("Items for order", order[0], ":", items)  # Debug
-            total = sum(item[1] * item[2] for item in items)
+            total = sum((item[1] * item[2]) - item[1] * item[3] + item[1] * item[4] for item in items)
             order_list.append({
                 "order_id": order[0],
                 "customer_name": order[1],
                 "created_at": str(order[2]),
+                "payment_method": order[3],
+                "order_discount": float(order[4]),
                 "total": total,
                 "items": [
-                    {"item_name": item[0], "quantity": item[1], "price": item[2]}
+                    {
+                        "item_name": item[0],
+                        "quantity": item[1],
+                        "price": item[2],
+                        "discount": item[3],
+                        "tax": item[4]
+                    }
                     for item in items
                 ]
             })
