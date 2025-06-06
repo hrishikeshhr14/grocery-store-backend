@@ -125,6 +125,8 @@ def create_order(order: OrderCreate, user=Depends(get_current_user)):
 
         # Insert order items with discount and tax, using product_id
         for item in order.items:
+            if not item.item_name:
+                raise HTTPException(status_code=400, detail="item_name is required for each order item")
             cur.execute(
                 "INSERT INTO order_items (order_id, product_id, item_name, quantity, price, discount, tax) VALUES (%s, %s, %s, %s, %s, %s, %s)",
                 (order_id, item.product_id, item.item_name, item.quantity, item.price, item.discount, item.tax)
