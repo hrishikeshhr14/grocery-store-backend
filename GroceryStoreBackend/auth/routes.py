@@ -98,6 +98,7 @@ def me(request: Request):
 
 class OrderItem(BaseModel):
     product_id: str
+    item_name: str
     quantity: int
     price: int
     discount: float = 0.0
@@ -125,8 +126,8 @@ def create_order(order: OrderCreate, user=Depends(get_current_user)):
         # Insert order items with discount and tax, using product_id
         for item in order.items:
             cur.execute(
-                "INSERT INTO order_items (order_id, product_id, quantity, price, discount, tax) VALUES (%s, %s, %s, %s, %s, %s)",
-                (order_id, item.product_id, item.quantity, item.price, item.discount, item.tax)
+                "INSERT INTO order_items (order_id, product_id, item_name, quantity, price, discount, tax) VALUES (%s, %s, %s, %s, %s, %s, %s)",
+                (order_id, item.product_id, item.item_name, item.quantity, item.price, item.discount, item.tax)
             )
 
         conn.commit()
