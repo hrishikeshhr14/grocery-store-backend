@@ -280,55 +280,10 @@ class ChatRequest(BaseModel):
 def chat_with_ai(request: ChatRequest, user=Depends(get_current_user)):
     try:
         openai.api_key = os.getenv("OPENAI_API_KEY")
-
-        # Fetch product stock levels
-        conn = get_connection()
-        cur = conn.cursor()
-        cur.execute("SELECT name, stock FROM products WHERE user_id = %s", (user["user_id"],))
-        products = cur.fetchall()
-        stock_info = "\n".join([f"{name}: {stock} left" for name, stock in products])
-
-        # Fetch top 3 customers by total spending
-        cur.execute("""
-            SELECT o.customer_name, SUM(oi.price * oi.quantity) as total
-            FROM orders o
-            JOIN order_items oi ON o.id = oi.order_id
-            WHERE o.user_id = %s
-            GROUP BY o.customer_name
-            ORDER BY total DESC
-            LIMIT 3
-        """, (user["user_id"],))
-        top_customers = cur.fetchall()
-        customer_info = "\n".join([f"{name}: ₹{total:.2f}" for name, total in top_customers])
-
-        # Today's date
-        today = datetime.date.today().strftime("%B %d, %Y")
-
-        # Construct context for AI
-        system_context = f"""You are a smart assistant for a grocery store.
-
-Today's date: {today}
-
-Product Stock Levels:
-{stock_info}
-
-Top Customers by Purchase:
-{customer_info}
-
-Use this information to answer questions like:
-- "Which items are out of stock?"
-- "Tell me the top 3 customers."
-- "How much did Ramesh spend last week?"
-- "What’s today’s date?"
-"""
-
-        cur.close()
-        conn.close()
-
         response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
             messages=[
-                {"role": "system", "content": system_context},
+                {"role": "system", "content": "You are a smart assistant for a grocery store. Answer based on user data."},
                 {"role": "user", "content": request.message}
             ]
         )
