@@ -97,7 +97,7 @@ def me(request: Request):
         raise HTTPException(status_code=401, detail="Invalid or expired token")
 
 class OrderItem(BaseModel):
-    item_name: str
+    product_id: str
     quantity: int
     price: int
     discount: float = 0.0
@@ -122,11 +122,11 @@ def create_order(order: OrderCreate, user=Depends(get_current_user)):
         )
         order_id = cur.fetchone()[0]
 
-        # Insert order items with discount and tax, using product_id instead of item_name
+        # Insert order items with discount and tax, using product_id
         for item in order.items:
             cur.execute(
                 "INSERT INTO order_items (order_id, product_id, quantity, price, discount, tax) VALUES (%s, %s, %s, %s, %s, %s)",
-                (order_id, item.item_name, item.quantity, item.price, item.discount, item.tax)
+                (order_id, item.product_id, item.quantity, item.price, item.discount, item.tax)
             )
 
         conn.commit()
