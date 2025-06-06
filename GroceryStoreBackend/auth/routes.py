@@ -122,10 +122,10 @@ def create_order(order: OrderCreate, user=Depends(get_current_user)):
         )
         order_id = cur.fetchone()[0]
 
-        # Insert order items with discount and tax
+        # Insert order items with discount and tax, using product_id instead of item_name
         for item in order.items:
             cur.execute(
-                "INSERT INTO order_items (order_id, item_name, quantity, price, discount, tax) VALUES (%s, %s, %s, %s, %s, %s)",
+                "INSERT INTO order_items (order_id, product_id, quantity, price, discount, tax) VALUES (%s, %s, %s, %s, %s, %s)",
                 (order_id, item.item_name, item.quantity, item.price, item.discount, item.tax)
             )
 
@@ -152,7 +152,7 @@ def list_orders(user=Depends(get_current_user)):
         order_list = []
         for order in orders:
             cur.execute(
-                "SELECT item_name, quantity, price, discount, tax FROM order_items WHERE order_id = %s",
+                "SELECT p.name, oi.quantity, oi.price, oi.discount, oi.tax FROM order_items oi JOIN products p ON oi.product_id = p.id WHERE oi.order_id = %s",
                 (order[0],)
             )
             items = cur.fetchall()
@@ -269,3 +269,24 @@ def delete_product(product_id: int, user=Depends(get_current_user)):
     finally:
         cur.close()
         conn.close()
+
+import openai
+from pydantic import BaseModel
+
+class ChatRequest(BaseModel):
+    message: str
+
+@router.post("/chat")
+def chat_with_ai(request: ChatRequest, user=Depends(get_current_user)):
+    try:
+        openai.api_key = os.getenv("OPENAI_API_KEY")
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", "content": "You are a smart assistant for a grocery store. Answer based on user data."},
+                {"role": "user", "content": request.message}
+            ]
+        )
+        return {"response": response.choices[0].message.content.strip()}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

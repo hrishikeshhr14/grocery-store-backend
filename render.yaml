@@ -12,3 +12,5 @@ services:
         value: 7fac26f48c88a5e72cf7d57d46bf77160e28018ce13fe070fd09db4f1b5eb002
       - key: DATABASE_URL
         value: postgresql://postgres.chbmabtzihitqrmifpnz:Messi10psg@aws-0-ap-southeast-1.pooler.supabase.com:5432/postgres
+      - key: OPENAI_API_KEY
+        value: ${OPENAI_API_KEY}
