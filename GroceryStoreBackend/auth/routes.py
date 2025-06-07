@@ -288,7 +288,13 @@ def chat_with_ai(request: ChatRequest, user=Depends(get_current_user)):
         cur = conn.cursor()
 
         # 1. Today's date
-        if re.search(r"\btoday('|’)s date\b", question) or ("today" in question and "date" in question) or ("what is the date" in question) or ("what's the date" in question):
+        if (
+            re.search(r"today.?s date", question)
+            or ("today" in question and "date" in question)
+            or ("what is the date" in question)
+            or ("what's the date" in question)
+            or ("date today" in question)
+        ):
             today = datetime.datetime.now().strftime("%Y-%m-%d")
             return {"response": f"Today's date is {today}."}
 
@@ -318,8 +324,8 @@ def chat_with_ai(request: ChatRequest, user=Depends(get_current_user)):
             return {"response": f"Top 3 customers: {customers}."}
 
         # Fallback to OpenAI for other questions
-        openai.api_key = os.getenv("OPENAI_API_KEY")
-        response = openai.ChatCompletion.create(
+        client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+        response = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[
                 {"role": "system", "content": "You are a smart assistant for a grocery store. Answer based on user data."},
