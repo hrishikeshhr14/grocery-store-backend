@@ -282,6 +282,41 @@ class ChatRequest(BaseModel):
 @router.post("/chat")
 def chat_with_ai(request: ChatRequest, user=Depends(get_current_user)):
     try:
+        question = request.message.lower().strip()
+        conn = get_connection()
+        cur = conn.cursor()
+
+        # 1. Today's date
+        if "today" in question and "date" in question:
+            today = datetime.datetime.now().strftime("%Y-%m-%d")
+            return {"response": f"Today's date is {today}."}
+
+        # 2. Items out of stock
+        if "out of stock" in question or "which items are out of stock" in question:
+            cur.execute("SELECT name FROM products WHERE stock <= 0 AND user_id = %s", (user["user_id"],))
+            rows = cur.fetchall()
+            if not rows:
+                return {"response": "No items are out of stock."}
+            items = ", ".join(row[0] for row in rows)
+            return {"response": f"The following items are out of stock: {items}."}
+
+        # 3. Top 3 customers (by order count)
+        if "top 3 customers" in question or "top three customers" in question:
+            cur.execute("""
+                SELECT customer_name, COUNT(*) as order_count
+                FROM orders
+                WHERE user_id = %s
+                GROUP BY customer_name
+                ORDER BY order_count DESC
+                LIMIT 3
+            """, (user["user_id"],))
+            rows = cur.fetchall()
+            if not rows:
+                return {"response": "No customers found."}
+            customers = "; ".join(f"{row[0]} ({row[1]} orders)" for row in rows)
+            return {"response": f"Top 3 customers: {customers}."}
+
+        # Fallback to OpenAI for other questions
         openai.api_key = os.getenv("OPENAI_API_KEY")
         response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
@@ -293,3 +328,6 @@ def chat_with_ai(request: ChatRequest, user=Depends(get_current_user)):
         return {"response": response.choices[0].message.content.strip()}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        cur.close()
+        conn.close()
