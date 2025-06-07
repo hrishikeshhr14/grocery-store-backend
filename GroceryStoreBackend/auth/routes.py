@@ -10,6 +10,7 @@ import os
 import datetime
 from typing import List
 from dotenv import load_dotenv
+import re
 
 load_dotenv() 
 
@@ -287,7 +288,7 @@ def chat_with_ai(request: ChatRequest, user=Depends(get_current_user)):
         cur = conn.cursor()
 
         # 1. Today's date
-        if "today" in question and "date" in question:
+        if re.search(r"\btoday('|’)s date\b", question) or ("today" in question and "date" in question) or ("what is the date" in question) or ("what's the date" in question):
             today = datetime.datetime.now().strftime("%Y-%m-%d")
             return {"response": f"Today's date is {today}."}
 
@@ -331,3 +332,18 @@ def chat_with_ai(request: ChatRequest, user=Depends(get_current_user)):
     finally:
         cur.close()
         conn.close()
+
+@router.get("/test-openai")
+def test_openai():
+    import openai
+    openai.api_key = os.getenv("OPENAI_API_KEY")
+    try:
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "user", "content": "Say hello!"}
+            ]
+        )
+        return {"result": response.choices[0].message.content.strip()}
+    except Exception as e:
+        return {"error": str(e)}
