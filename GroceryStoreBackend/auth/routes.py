@@ -320,8 +320,11 @@ def chat_with_ai(request: ChatRequest, user=Depends(get_current_user)):
             rows = cur.fetchall()
             if not rows:
                 return {"response": "No customers found."}
-            customers = "; ".join(f"{row[0]} ({row[1]} orders)" for row in rows)
-            return {"response": f"Top 3 customers: {customers}."}
+            customer_list = [
+                {"customer_name": row[0], "order_count": row[1]}
+                for row in rows
+            ]
+            return {"response": customer_list}
 
         # Fallback to OpenAI for other questions
         client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
@@ -338,18 +341,3 @@ def chat_with_ai(request: ChatRequest, user=Depends(get_current_user)):
     finally:
         cur.close()
         conn.close()
-
-@router.get("/test-openai")
-def test_openai():
-    import openai
-    openai.api_key = os.getenv("OPENAI_API_KEY")
-    try:
-        response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": "user", "content": "Say hello!"}
-            ]
-        )
-        return {"result": response.choices[0].message.content.strip()}
-    except Exception as e:
-        return {"error": str(e)}
